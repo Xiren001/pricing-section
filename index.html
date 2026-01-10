@@ -446,13 +446,12 @@
         }
 
         .per-bottle {
-            font-size: 16px;
-            color: #666;
+            font-size: 18px;
             margin-bottom: 8px;
         }
 
         .total {
-            font-size: 16px;
+            font-size: 18px;
             color: #666;
             margin-bottom: 12px;
         }
@@ -893,6 +892,9 @@
             2: { buy: 2, free: 3 },
             3: { buy: 3, free: 6 }
         };
+        const perBottlePrices = {};
+        const originalTotals = {};
+        const savingsAmounts = {};
         let totalOffers = 3;
 
         function addOfferSection(offerNum) {
@@ -961,8 +963,20 @@
                             handleImageUpload(this, `offer${offerNum}`);
                         });
                     } else {
-                        element.addEventListener('input', updateCards);
-                        element.addEventListener('change', updateCards);
+                        if (field === 'Price') {
+                            // Clear stored per-bottle price when user manually changes price
+                            element.addEventListener('input', function() {
+                                delete perBottlePrices[offerNum];
+                                updateCards();
+                            });
+                            element.addEventListener('change', function() {
+                                delete perBottlePrices[offerNum];
+                                updateCards();
+                            });
+                        } else {
+                            element.addEventListener('input', updateCards);
+                            element.addEventListener('change', updateCards);
+                        }
                     }
                 }
             });
@@ -978,6 +992,11 @@
             }
 
             try {
+                // Clear stored values before parsing new data
+                Object.keys(perBottlePrices).forEach(key => delete perBottlePrices[key]);
+                Object.keys(originalTotals).forEach(key => delete originalTotals[key]);
+                Object.keys(savingsAmounts).forEach(key => delete savingsAmounts[key]);
+                
                 // Parse currency
                 const currencyMatch = text.match(/Currency:\s*(.+?)(?:\n|$)/i);
                 if (currencyMatch) {
@@ -1061,7 +1080,35 @@
                             }
                         }
                         
-                        // Parse selling price - try multiple patterns
+                        // Parse per-bottle price first (to avoid rounding issues)
+                        let perBottlePriceMatch = null;
+                        // Try "Per Bottle Price:" pattern first (most specific)
+                        perBottlePriceMatch = offerSection.match(/[•\*\-]?\s*Per Bottle Price:\s*[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        if (!perBottlePriceMatch) {
+                            perBottlePriceMatch = offerSection.match(/Per Bottle Price:\s*[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        }
+                        if (!perBottlePriceMatch) {
+                            perBottlePriceMatch = offerSection.match(/[•\*\-]\s*Per Bottle[:\s]+[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        }
+                        if (!perBottlePriceMatch) {
+                            perBottlePriceMatch = offerSection.match(/Per Bottle[:\s]+[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        }
+                        if (!perBottlePriceMatch) {
+                            perBottlePriceMatch = offerSection.match(/Per bottle[:\s]+[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        }
+                        
+                        let perBottlePrice = null;
+                        if (perBottlePriceMatch && perBottlePriceMatch[1]) {
+                            const priceStr = perBottlePriceMatch[1].replace(/,/g, '');
+                            perBottlePrice = parseFloat(priceStr);
+                            if (isNaN(perBottlePrice)) perBottlePrice = null;
+                            else {
+                                // Store the exact per-bottle price for this offer
+                                perBottlePrices[offerNum] = perBottlePrice;
+                            }
+                        }
+                        
+                        // Parse selling price (total) - try multiple patterns
                         let sellingPriceMatch = null;
                         
                         // Pattern 1: With bullet and currency symbol
@@ -1092,10 +1139,40 @@
                         }
                         
                         let price = null;
+                        // Always use the selling price (total) from the text if available
+                        // We'll use the stored per-bottle price in calculations instead
                         if (sellingPriceMatch && sellingPriceMatch[1]) {
                             const priceStr = sellingPriceMatch[1].replace(/,/g, '');
                             price = parseFloat(priceStr);
                             if (isNaN(price)) price = null;
+                        }
+                        
+                        // Parse Original Total (strikethrough price)
+                        let originalTotalMatch = null;
+                        originalTotalMatch = offerSection.match(/[•\*\-]?\s*Original Total[^:]*:\s*[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        if (!originalTotalMatch) {
+                            originalTotalMatch = offerSection.match(/Original Total[^:]*:\s*[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        }
+                        if (originalTotalMatch && originalTotalMatch[1]) {
+                            const priceStr = originalTotalMatch[1].replace(/,/g, '');
+                            const originalTotal = parseFloat(priceStr);
+                            if (!isNaN(originalTotal)) {
+                                originalTotals[offerNum] = originalTotal;
+                            }
+                        }
+                        
+                        // Parse You Save amount
+                        let youSaveMatch = null;
+                        youSaveMatch = offerSection.match(/[•\*\-]?\s*You Save:\s*[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        if (!youSaveMatch) {
+                            youSaveMatch = offerSection.match(/You Save:\s*[A-Z$€£¥]?([\d,]+\.?\d*)/i);
+                        }
+                        if (youSaveMatch && youSaveMatch[1]) {
+                            const priceStr = youSaveMatch[1].replace(/,/g, '');
+                            const savings = parseFloat(priceStr);
+                            if (!isNaN(savings)) {
+                                savingsAmounts[offerNum] = savings;
+                            }
                         }
                         
                         // Store buy/free quantities
@@ -1193,10 +1270,28 @@
             const compareAtPrice = parseFloat(document.getElementById('compareAtPrice').value) || 0;
             
             const totalUnits = buy + free;
-            const originalTotal = totalUnits * compareAtPrice;
-            const perBottlePrice = sellingPrice / totalUnits;
+            // Use stored original total if available (from parsing), otherwise calculate
+            let originalTotal;
+            if (originalTotals[offerNum] !== undefined) {
+                originalTotal = originalTotals[offerNum];
+            } else {
+                originalTotal = totalUnits * compareAtPrice;
+            }
+            // Use stored per-bottle price if available (from parsing), otherwise calculate
+            let perBottlePrice;
+            if (perBottlePrices[offerNum] !== undefined) {
+                perBottlePrice = perBottlePrices[offerNum];
+            } else {
+                perBottlePrice = sellingPrice / totalUnits;
+            }
             const discount = ((originalTotal - sellingPrice) / originalTotal) * 100;
-            const savings = originalTotal - sellingPrice;
+            // Use stored savings if available (from parsing), otherwise calculate
+            let savings;
+            if (savingsAmounts[offerNum] !== undefined) {
+                savings = savingsAmounts[offerNum];
+            } else {
+                savings = originalTotal - sellingPrice;
+            }
             
             return {
                 buy,
@@ -1258,9 +1353,9 @@
                     </div>
                         `}
                 </div>
-                    <div class="price" style="color: ${themeColor};">${formatPrice(offerData.sellingPrice, symbol)}</div>
-                    <div class="per-bottle">Per Bottle: ${formatPrice(offerData.perBottlePrice, symbol)}</div>
-                    <div class="total">Total: ${offerData.originalTotal > offerData.sellingPrice ? `<span class="original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
+                    <div class="price" style="color: ${themeColor};">${formatPrice(offerData.perBottlePrice, symbol)}</div>
+                    <div class="per-bottle" style="color: ${themeColor};">Per bottle</div>
+                    <div class="total">${offerData.originalTotal > offerData.sellingPrice ? `<span class="original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
                     <button class="add-to-cart" onclick="window.open('${link}', '_blank')" style="background-color: ${buttonColor};">ADD TO CART</button>
                     ${offerData.savings > 0 ? `<div class="you-save" style="color: ${themeColor};">You Save: ${formatPrice(offerData.savings, symbol)}</div>` : ''}
                 <div class="guarantee">
@@ -1854,7 +1949,34 @@
                         element.addEventListener('input', function() {
                             handleImageUpload(this, id.replace('Image', ''));
                         });
-            } else {
+                    } else if (id.includes('Price') && id.startsWith('offer')) {
+                        // Clear stored per-bottle price, original total, and savings when user manually changes price
+                        const offerNum = id.replace('offer', '').replace('Price', '');
+                        element.addEventListener('input', function() {
+                            delete perBottlePrices[offerNum];
+                            delete originalTotals[offerNum];
+                            delete savingsAmounts[offerNum];
+                            updateCards();
+                        });
+                        element.addEventListener('change', function() {
+                            delete perBottlePrices[offerNum];
+                            delete originalTotals[offerNum];
+                            delete savingsAmounts[offerNum];
+                            updateCards();
+                        });
+                    } else if (id === 'compareAtPrice') {
+                        // Clear stored original totals and savings when compare-at price changes
+                        element.addEventListener('input', function() {
+                            Object.keys(originalTotals).forEach(key => delete originalTotals[key]);
+                            Object.keys(savingsAmounts).forEach(key => delete savingsAmounts[key]);
+                            updateCards();
+                        });
+                        element.addEventListener('change', function() {
+                            Object.keys(originalTotals).forEach(key => delete originalTotals[key]);
+                            Object.keys(savingsAmounts).forEach(key => delete savingsAmounts[key]);
+                            updateCards();
+                        });
+                    } else {
                         element.addEventListener('input', updateCards);
                         element.addEventListener('change', updateCards);
                     }
