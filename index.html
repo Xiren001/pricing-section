@@ -1332,9 +1332,9 @@
                     </div>
                             `}
                     </div>
-                        <div class="pgc-price" style="color: ${themeColor};">${formatPrice(offerData.sellingPrice, symbol)}</div>
-                        <div class="pgc-per-bottle">Per Bottle: ${formatPrice(offerData.perBottlePrice, symbol)}</div>
-                        <div class="pgc-total">Total: ${offerData.originalTotal > offerData.sellingPrice ? `<span class="pgc-original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
+                        <div class="pgc-price" style="color: ${themeColor};">${formatPrice(offerData.perBottlePrice, symbol)}</div>
+                        <div class="pgc-per-bottle" style="color: ${themeColor};">Per bottle</div>
+                        <div class="pgc-total">${offerData.originalTotal > offerData.sellingPrice ? `<span class="pgc-original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
                         <a href="${link}" target="_blank" class="pgc-add-to-cart" style="background-color: ${buttonColor} !important;">ADD TO CART</a>
                         ${offerData.savings > 0 ? `<div class="pgc-you-save" style="color: ${themeColor};">You Save: ${formatPrice(offerData.savings, symbol)}</div>` : ''}
                         <div class="pgc-guarantee">
@@ -1360,6 +1360,7 @@
     padding: 16px 20px !important;
     font-weight: 700 !important;
     font-size: 28px !important;
+    width: 100% !important;
 }
 
 .pgc-pricing-section {
@@ -1457,7 +1458,7 @@
     align-items: center !important;
     justify-content: center !important;
     border-radius: 50% !important;
-    z-index: 10 !important;
+    z-index: 1 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     overflow: visible !important;
 }
@@ -1517,13 +1518,12 @@
 }
 
 .pgc-per-bottle {
-    font-size: 16px !important;
-    color: #666 !important;
+    font-size: 18px !important;
     margin-bottom: 8px !important;
 }
 
 .pgc-total {
-    font-size: 16px !important;
+    font-size: 18px !important;
     color: #666 !important;
     margin-bottom: 12px !important;
 }
