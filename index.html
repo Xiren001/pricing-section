@@ -705,6 +705,14 @@
                 <!-- General Settings -->
                 <div class="offer-section" style="margin-bottom: 20px;">
                     <h3 style="margin-top: 0;">General Settings</h3>
+                    <div class="form-group">
+                        <label>Language</label>
+                        <select id="language" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                            <option value="en" selected>English</option>
+                            <option value="es">Spanish (Español)</option>
+                            <option value="de">German (Deutsch)</option>
+                        </select>
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Currency</label>
@@ -851,7 +859,7 @@
         <!-- Bottom Section -->
         <div class="bottom-section">
             <div>
-                <div class="payment-text">Our trusted payment processors:</div>
+                <div class="payment-text" id="paymentTextPreview">Our trusted payment processors:</div>
                 <div class="payment-logos">
                             <img src="https://img.funnelish.com/77498/831339/1749739498-Group%201000002576.png" alt="Payment Methods" style="max-height: 50px; width: auto;">
                 </div>
@@ -861,7 +869,7 @@
                 <div class="ssl-icon">
                             <img src="https://img.funnelish.com/77498/831339/1749739518-Capa_1.png" alt="SSL Secure" style="width: 80px; height: auto;">
             </div>
-                <div class="security-text">
+                <div class="security-text" id="securityTextPreview">
                     We use a 256-bit secure shopping cart where 100% of your data is encrypted, safe and secure. This is the same data security standard used by most banks, governments and military organizations.
                 </div>
             </div>
@@ -882,6 +890,75 @@
 
     <!-- JavaScript for auto-calculation and card generation -->
     <script>
+        const translations = {
+            en: {
+                perBottle: "Per bottle",
+                total: "Total:",
+                addToCart: "ADD TO CART",
+                youSave: "You Save:",
+                off: "OFF",
+                guarantee1: "60 DAYS MONEY BACK GUARANTEE",
+                guarantee2: "FREE SHIPPING",
+                paymentProcessors: "Our trusted payment processors:",
+                securityText: "We use a 256-bit secure shopping cart where 100% of your data is encrypted, safe and secure. This is the same data security standard used by most banks, governments and military organizations.",
+                shippingBanners: [
+                    "FREE Shipping For 2 & 4 Bottle Orders",
+                    "Choose Your Package & Save Up To 50%",
+                    "Most Customers Choose Our 3-Month Package",
+                    "Limited Time Offer – Bigger Bundles Save More"
+                ],
+                cardLabels: {
+                    starter: "STARTER ORDER",
+                    biggest: "BIGGEST SAVINGS",
+                    popular: "MOST POPULAR"
+                }
+            },
+            es: {
+                perBottle: "Por botella",
+                total: "Total:",
+                addToCart: "AÑADIR AL CARRITO",
+                youSave: "Ahorras:",
+                off: "DESCUENTO",
+                guarantee1: "GARANTÍA DE DEVOLUCIÓN DE DINERO DE 60 DÍAS",
+                guarantee2: "ENVÍO GRATIS",
+                paymentProcessors: "Nuestros procesadores de pago de confianza:",
+                securityText: "Utilizamos un carrito de compras seguro de 256 bits donde el 100% de sus datos están encriptados, seguros y protegidos. Este es el mismo estándar de seguridad de datos utilizado por la mayoría de los bancos, gobiernos y organizaciones militares.",
+                shippingBanners: [
+                    "ENVÍO GRATIS Para Pedidos de 2 y 4 Botellas",
+                    "Elige Tu Paquete y Ahorra Hasta 50%",
+                    "La Mayoría de los Clientes Eligen Nuestro Paquete de 3 Meses",
+                    "Oferta por Tiempo Limitado – Los Paquetes Más Grandes Ahorran Más"
+                ],
+                cardLabels: {
+                    starter: "PEDIDO INICIAL",
+                    biggest: "MAYOR AHORRO",
+                    popular: "MÁS POPULAR"
+                }
+            },
+            de: {
+                perBottle: "Pro Flasche",
+                total: "Gesamt:",
+                addToCart: "IN DEN WARENKORB",
+                youSave: "Sie sparen:",
+                off: "RABATT",
+                guarantee1: "60 TAGE GELD-ZURÜCK-GARANTIE",
+                guarantee2: "KOSTENLOSER VERSAND",
+                paymentProcessors: "Unsere vertrauenswürdigen Zahlungsabwickler:",
+                securityText: "Wir verwenden einen 256-Bit-sicheren Warenkorb, in dem 100% Ihrer Daten verschlüsselt, sicher und geschützt sind. Dies ist derselbe Datensicherheitsstandard, der von den meisten Banken, Regierungen und militärischen Organisationen verwendet wird.",
+                shippingBanners: [
+                    "KOSTENLOSER VERSAND Für Bestellungen mit 2 & 4 Flaschen",
+                    "Wählen Sie Ihr Paket & Sparen Sie Bis Zu 50%",
+                    "Die Meisten Kunden Wählen Unser 3-Monats-Paket",
+                    "Begrenztes Angebot – Größere Pakete Sparen Mehr"
+                ],
+                cardLabels: {
+                    starter: "STARTER BESTELLUNG",
+                    biggest: "GRÖSSTE EINSPARUNGEN",
+                    popular: "BELIEBTESTE"
+                }
+            }
+        };
+
         const imageData = {
             offer1: null,
             offer2: null,
@@ -896,6 +973,57 @@
         const originalTotals = {};
         const savingsAmounts = {};
         let totalOffers = 3;
+
+        function getCurrentLanguage() {
+            const langSelect = document.getElementById('language');
+            return langSelect ? langSelect.value : 'en';
+        }
+
+        function getTranslation(key) {
+            const lang = getCurrentLanguage();
+            const t = translations[lang] || translations.en;
+            return t[key] || key;
+        }
+
+        function updateShippingBannerOptions() {
+            const lang = getCurrentLanguage();
+            const t = translations[lang] || translations.en;
+            const select = document.getElementById('shippingBanner');
+            if (!select) return;
+            
+            const currentValue = select.value;
+            select.innerHTML = '';
+            
+            t.shippingBanners.forEach(banner => {
+                const option = document.createElement('option');
+                option.value = banner;
+                option.textContent = banner;
+                if (banner === currentValue || (select.options.length === 0 && banner === t.shippingBanners[0])) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        function updateCardLabels() {
+            const lang = getCurrentLanguage();
+            const t = translations[lang] || translations.en;
+            const labels = t.cardLabels;
+            
+            const cardLabel1 = document.getElementById('cardLabel1');
+            const cardLabel2 = document.getElementById('cardLabel2');
+            const cardLabel3 = document.getElementById('cardLabel3');
+            
+            if (cardLabel1 && !cardLabel1.dataset.userModified) {
+                cardLabel1.value = labels.starter;
+            }
+            if (cardLabel2 && !cardLabel2.dataset.userModified) {
+                cardLabel2.value = labels.biggest;
+            }
+            if (cardLabel3 && !cardLabel3.dataset.userModified) {
+                cardLabel3.value = labels.popular;
+            }
+        }
 
         function addOfferSection(offerNum) {
             const offersContainer = document.getElementById('offersContainer');
@@ -1318,9 +1446,12 @@
             const isHighlighted = highlightCard === offerNum;
             const isDimmed = highlightCard > 0 && !isHighlighted;
             
-            const cardLabel1 = document.getElementById('cardLabel1')?.value || 'STARTER ORDER';
-            const cardLabel2 = document.getElementById('cardLabel2')?.value || 'BIGGEST SAVINGS';
-            const cardLabel3 = document.getElementById('cardLabel3')?.value || 'MOST POPULAR';
+            const lang = getCurrentLanguage();
+            const t = translations[lang] || translations.en;
+            
+            const cardLabel1 = document.getElementById('cardLabel1')?.value || t.cardLabels.starter;
+            const cardLabel2 = document.getElementById('cardLabel2')?.value || t.cardLabels.biggest;
+            const cardLabel3 = document.getElementById('cardLabel3')?.value || t.cardLabels.popular;
             const cardLabelInput = document.getElementById(`cardLabel${offerNum}`);
             const cardLabel = cardLabelInput ? cardLabelInput.value : (offerNum === 1 ? cardLabel1 : offerNum === 2 ? cardLabel2 : offerNum === 3 ? cardLabel3 : `OFFER ${offerNum}`);
             
@@ -1331,7 +1462,7 @@
                         <circle cx="45" cy="45" r="42" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-dasharray="4 4"/>
                         <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-dasharray="3 3"/>
                     </svg>
-                    <span style="position: relative; z-index: 1;">${offerData.discount}% <span style="font-size: 16px;">OFF</span></span>
+                    <span style="position: relative; z-index: 1;">${offerData.discount}% <span style="font-size: 16px;">${t.off}</span></span>
                 </div>
             ` : '';
             
@@ -1354,13 +1485,13 @@
                         `}
                 </div>
                     <div class="price" style="color: ${themeColor};">${formatPrice(offerData.perBottlePrice, symbol)}</div>
-                    <div class="per-bottle" style="color: ${themeColor};">Per bottle</div>
-                    <div class="total">${offerData.originalTotal > offerData.sellingPrice ? `<span class="original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
-                    <button class="add-to-cart" onclick="window.open('${link}', '_blank')" style="background-color: ${buttonColor};">ADD TO CART</button>
-                    ${offerData.savings > 0 ? `<div class="you-save" style="color: ${themeColor};">You Save: ${formatPrice(offerData.savings, symbol)}</div>` : ''}
+                    <div class="per-bottle" style="color: ${themeColor};">${t.perBottle}</div>
+                    <div class="total">${t.total} ${offerData.originalTotal > offerData.sellingPrice ? `<span class="original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
+                    <button class="add-to-cart" onclick="window.open('${link}', '_blank')" style="background-color: ${buttonColor};">${t.addToCart}</button>
+                    ${offerData.savings > 0 ? `<div class="you-save" style="color: ${themeColor};">${t.youSave} ${formatPrice(offerData.savings, symbol)}</div>` : ''}
                 <div class="guarantee">
-                    <div class="guarantee-item">60 DAYS MONEY BACK GUARANTEE</div>
-                    <div class="guarantee-item">FREE SHIPPING</div>
+                    <div class="guarantee-item">${t.guarantee1}</div>
+                    <div class="guarantee-item">${t.guarantee2}</div>
                 </div>
             </div>
             `;
@@ -1374,6 +1505,8 @@
             const buttonColor = (buttonHexInput && /^#[0-9A-Fa-f]{6}$/.test(buttonHexInput.value)) ? buttonHexInput.value.toUpperCase() : (document.getElementById('buttonColor').value || '#C85A54');
             const shippingBannerText = document.getElementById('shippingBanner').value || 'FREE Shipping For 2 & 4 Bottle Orders';
             const highlightCard = parseInt(document.getElementById('highlightCard').value) || 0;
+            const lang = getCurrentLanguage();
+            const t = translations[lang] || translations.en;
             let cardsHTML = '';
             
             // Find all available offers
@@ -1396,9 +1529,9 @@
                 const link = document.getElementById(`offer${i}Link`).value || '#';
                 const imageInput = document.getElementById(`offer${i}Image`);
                 const image = imageInput ? imageInput.value.trim() : (imageData[`offer${i}`] || '');
-                const cardLabel1 = document.getElementById('cardLabel1')?.value || 'STARTER ORDER';
-                const cardLabel2 = document.getElementById('cardLabel2')?.value || 'BIGGEST SAVINGS';
-                const cardLabel3 = document.getElementById('cardLabel3')?.value || 'MOST POPULAR';
+                const cardLabel1 = document.getElementById('cardLabel1')?.value || t.cardLabels.starter;
+                const cardLabel2 = document.getElementById('cardLabel2')?.value || t.cardLabels.biggest;
+                const cardLabel3 = document.getElementById('cardLabel3')?.value || t.cardLabels.popular;
                 const cardLabelInput = document.getElementById(`cardLabel${i}`);
                 const cardLabel = cardLabelInput ? cardLabelInput.value : (i === 1 ? cardLabel1 : i === 2 ? cardLabel2 : i === 3 ? cardLabel3 : `OFFER ${i}`);
                 const isHighlighted = highlightCard === i;
@@ -1409,7 +1542,7 @@
                             <circle cx="45" cy="45" r="42" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-dasharray="4 4"/>
                             <circle cx="45" cy="45" r="38" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-dasharray="3 3"/>
                         </svg>
-                        <span style="position: relative; z-index: 1;">${offerData.discount}% <span style="font-size: 16px;">OFF</span></span>
+                        <span style="position: relative; z-index: 1;">${offerData.discount}% <span style="font-size: 16px;">${t.off}</span></span>
                     </div>
                 ` : '';
                 
@@ -1428,13 +1561,13 @@
                             `}
                     </div>
                         <div class="pgc-price" style="color: ${themeColor};">${formatPrice(offerData.perBottlePrice, symbol)}</div>
-                        <div class="pgc-per-bottle" style="color: ${themeColor};">Per bottle</div>
-                        <div class="pgc-total">${offerData.originalTotal > offerData.sellingPrice ? `<span class="pgc-original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
-                        <a href="${link}" target="_blank" class="pgc-add-to-cart" style="background-color: ${buttonColor} !important;">ADD TO CART</a>
-                        ${offerData.savings > 0 ? `<div class="pgc-you-save" style="color: ${themeColor};">You Save: ${formatPrice(offerData.savings, symbol)}</div>` : ''}
+                        <div class="pgc-per-bottle" style="color: ${themeColor};">${t.perBottle}</div>
+                        <div class="pgc-total">${t.total} ${offerData.originalTotal > offerData.sellingPrice ? `<span class="pgc-original-price">${formatPrice(offerData.originalTotal, symbol)}</span>` : ''}${formatPrice(offerData.sellingPrice, symbol)}</div>
+                        <a href="${link}" target="_blank" class="pgc-add-to-cart" style="background-color: ${buttonColor} !important;">${t.addToCart}</a>
+                        ${offerData.savings > 0 ? `<div class="pgc-you-save" style="color: ${themeColor};">${t.youSave} ${formatPrice(offerData.savings, symbol)}</div>` : ''}
                         <div class="pgc-guarantee">
-                            <div class="pgc-guarantee-item">60 DAYS MONEY BACK GUARANTEE</div>
-                            <div class="pgc-guarantee-item">FREE SHIPPING</div>
+                            <div class="pgc-guarantee-item">${t.guarantee1}</div>
+                            <div class="pgc-guarantee-item">${t.guarantee2}</div>
                 </div>
             </div>
                 `;
@@ -1815,7 +1948,7 @@
 
     <div class="pgc-bottom-section">
         <div>
-            <div class="pgc-payment-text">Our trusted payment processors:</div>
+            <div class="pgc-payment-text">${t.paymentProcessors}</div>
             <div class="pgc-payment-logos">
                 <img src="https://img.funnelish.com/77498/831339/1749739498-Group%201000002576.png" alt="Payment Methods" style="max-height: 50px; width: auto;">
             </div>
@@ -1826,7 +1959,7 @@
                 <img src="https://img.funnelish.com/77498/831339/1749739518-Capa_1.png" alt="SSL Secure" style="width: 80px; height: auto;">
             </div>
             <div class="pgc-security-text">
-                    We use a 256-bit secure shopping cart where 100% of your data is encrypted, safe and secure. This is the same data security standard used by most banks, governments and military organizations.
+                    ${t.securityText}
                 </div>
             </div>
         </div>
@@ -1911,6 +2044,18 @@
             const shippingBannerPreview = document.getElementById('shippingBannerPreview');
             if (shippingBanner && shippingBannerPreview) {
                 shippingBannerPreview.textContent = shippingBanner.value;
+            }
+            
+            // Update preview text elements
+            const lang = getCurrentLanguage();
+            const t = translations[lang] || translations.en;
+            const paymentTextPreview = document.getElementById('paymentTextPreview');
+            const securityTextPreview = document.getElementById('securityTextPreview');
+            if (paymentTextPreview) {
+                paymentTextPreview.textContent = t.paymentProcessors;
+            }
+            if (securityTextPreview) {
+                securityTextPreview.textContent = t.securityText;
             }
         }
 
@@ -2020,6 +2165,31 @@
                     }
                 });
             }
+            
+            // Language change event listener
+            const languageSelect = document.getElementById('language');
+            if (languageSelect) {
+                languageSelect.addEventListener('change', function() {
+                    updateShippingBannerOptions();
+                    updateCardLabels();
+                    updateCards();
+                });
+            }
+            
+            // Track user modifications to card labels
+            ['cardLabel1', 'cardLabel2', 'cardLabel3'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', function() {
+                        this.dataset.userModified = 'true';
+                    });
+                    element.addEventListener('focus', function() {
+                        if (!this.dataset.userModified) {
+                            this.dataset.userModified = 'false';
+                        }
+                    });
+                }
+            });
             
             // Initial update
             updateCards();
